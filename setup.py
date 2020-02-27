@@ -13,7 +13,7 @@ if is_windows:
 else:
 	q = []
 modulexndec = Extension('xndec.libxndec', extra_compile_args=['--std=c++11'],extra_link_args=q,sources = ['extern/xndec/xn16zdec.cpp'])
-moduleany = Extension('anyregistration.libanyregistration', include_dirs=['.','/opt/local/include/eigen3'] ,extra_compile_args=['--std=c++11'],extra_link_args=q, sources = ['extern/anyregistration/anyregistration.cpp'])
+moduleany = Extension('anyregistration.libanyregistration', include_dirs=['.','/usr/include/eigen3'] ,extra_compile_args=['--std=c++11'],extra_link_args=q, sources = ['extern/anyregistration/anyregistration.cpp'])
 
 setup(
   name = 'pyoni',
