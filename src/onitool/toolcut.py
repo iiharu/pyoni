@@ -24,6 +24,7 @@ def cut(args,target,a,b):
     r = oni.Reader(a)
     w = oni.Writer(b,r.h0)
     qf = dict()
+    cf = None # color head
     while True:
         h = r.next()
         if h is None:
@@ -31,19 +32,38 @@ def cut(args,target,a,b):
         elif h["rt"] == oni.RECORD_SEEK_TABLE:
             w.emitseek(h["nid"])
         elif h["rt"] == oni.RECORD_NEW_DATA:
+            # タイムスタンプ順で最初のフレームがカラーフレームになるようにする
+            # 最初の深度フレームのタイムスタンプは, 最初のカラーフレームのものよりも大きくなっている必要がある
+            # NiViewerで先頭が深度フレームのファイルを開いて1フレーム目にシークしようとすると固まるため
+
+            node_type = r.streams[h["nid"]]["nodetype"]
+
             hh = oni.parsedatahead(a,h)            
             # check timestamp/frame
             if target[0] == "frame":
                 good = hh["frameid"] >= target[1][0] and hh["frameid"] <= target[1][1]
             else:
                 good = hh["timestamp"] >= target[1][0] and hh["timestamp"] <= target[1][1]
+
+            # 基準 (切り出しの先頭) のカラーフレームを取得
+            if good and node_type == oni.NODE_TYPE_IMAGE and cf is None:
+                cf = hh
+
+            # 基準のカラーフレームより前のタイムスタンプの深度フレームを破棄
+            if node_type == oni.NODE_TYPE_DEPTH and (cf is None or hh["timestamp"] < cf["timestamp"]):
+                good = False
+
             if good:
                 qff = qf.get(h["nid"])
                 if qff is None:
                     qff = hh # original
                     qf[h["nid"]] = qff
                 print dict(nid=h["nid"],ps=h["ps"],fs=h["fs"],frameid=hh["frameid"],timestamp=hh["timestamp"])
-                w.addframe(h["nid"],hh["frameid"]-qff["frameid"]+1,hh["timestamp"]-qff["timestamp"],a.read(h["ps"]))
+                # タイムスタンプを補正
+                new_timestamp = hh["timestamp"]-cf["timestamp"]
+                if node_type == oni.NODE_TYPE_DEPTH and new_timestamp == 0:
+                    new_timestamp = 1
+                w.addframe(h["nid"],hh["frameid"]-qff["frameid"]+1,new_timestamp,a.read(h["ps"]))
         else:
             w.copyblock(h,a)
     w.finalize()
