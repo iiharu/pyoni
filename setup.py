@@ -18,7 +18,7 @@ moduleany = Extension('anyregistration.libanyregistration', include_dirs=['.','/
 setup(
   name = 'pyoni',
   version = '0.6.1',
-  install_requires = ['pypng','pillow <= 6.2.2'],
+  install_requires = ['pypng','pillow < 7.0.0'],
   description = 'Python OpenNI ONI tool',
   author = 'Emanuele Ruffaldi',
   author_email = 'emanuele ruffaldi',
